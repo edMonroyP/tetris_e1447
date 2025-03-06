@@ -18,7 +18,7 @@
         .game-container {
             width: 320px;
             height: 480px;
-            margin: 50px auto;
+            margin: 20px auto;
             border: 10px solid gray;
             background-color: black;
             display: grid;
@@ -33,27 +33,37 @@
             position: absolute;
             border: 2px solid #333;
         }
-        .btn-custom {
-            background: #111;
-            color: #0ff;
-            border: 2px solid #0ff;
-            padding: 10px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: red;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
         }
-        .btn-custom:hover {
-            background: #0ff;
-            color: #000;
+        .score-board {
+            font-size: 20px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <h1 class="animate__animated animate__pulse">Tetris Retro</h1>
+    <div class="score-board">Puntos: <span id="score">0</span></div>
     <div class="game-container" id="game-board"></div>
+    <div id="game-over" class="game-over">GAME OVER!<br>Click to Restart</div>
     <script>
         const gameBoard = document.getElementById("game-board");
+        const gameOverScreen = document.getElementById("game-over");
+        const scoreDisplay = document.getElementById("score");
+        let score = 0;
         const boardWidth = 10, boardHeight = 15;
         const colors = ["red", "yellow", "cyan", "purple", "green", "blue", "orange"];
         const tetrominoes = [
@@ -71,7 +81,7 @@
         function isValidMove(shape, x, y) {
             return shape.every((row, r) =>
                 row.every((cell, c) =>
-                    !cell || (x + c >= 0 && x + c < boardWidth && y + r < boardHeight && !board[y + r][x + c])
+                    !cell || (x + c >= 0 && x + c < boardWidth && y + r < boardHeight && !board[y + r]?.[x + c])
                 )
             );
         }
@@ -87,8 +97,8 @@
                 blocks: []
             };
             if (!isValidMove(currentPiece.shape, currentPiece.x, currentPiece.y)) {
-                alert("Game Over");
-                location.reload();
+                gameOverScreen.style.display = "flex";
+                return;
             }
             updatePiecePosition();
         }
@@ -139,10 +149,12 @@
         }
 
         function checkLines() {
-            for (let y = 0; y < boardHeight; y++) {
+            for (let y = boardHeight - 1; y >= 0; y--) {
                 if (board[y].every(cell => cell !== null)) {
                     board.splice(y, 1);
                     board.unshift(Array(boardWidth).fill(null));
+                    score += 100;
+                    scoreDisplay.textContent = score;
                     document.querySelectorAll(".block").forEach(block => block.remove());
                     board.forEach((row, rowIndex) => row.forEach((cell, colIndex) => {
                         if (cell) createBlock(colIndex, rowIndex, cell);
@@ -157,6 +169,7 @@
             if (event.key === "ArrowDown") movePiece(0, 1);
         });
 
+        gameOverScreen.addEventListener("click", () => location.reload());
         setInterval(() => movePiece(0, 1), 1000);
         spawnBlock();
     </script>

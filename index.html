@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Tetris Game</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body {
+            background-color: black;
+            color: #0ff;
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+        }
+        .game-container {
+            width: 320px;
+            height: 480px;
+            margin: 50px auto;
+            border: 10px solid gray;
+            background-color: black;
+            display: grid;
+            grid-template-columns: repeat(10, 32px);
+            grid-template-rows: repeat(15, 32px);
+            position: relative;
+            overflow: hidden;
+        }
+        .block {
+            width: 32px;
+            height: 32px;
+            position: absolute;
+            border: 2px solid #333;
+        }
+        .btn-custom {
+            background: #111;
+            color: #0ff;
+            border: 2px solid #0ff;
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-custom:hover {
+            background: #0ff;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="animate__animated animate__pulse">Tetris Retro</h1>
+    <div class="game-container" id="game-board"></div>
+    <script>
+        const gameBoard = document.getElementById("game-board");
+        const boardWidth = 10, boardHeight = 15;
+        const colors = ["red", "yellow", "cyan", "purple", "green", "blue", "orange"];
+        const tetrominoes = [
+            [[1, 1, 1, 1]], // I
+            [[1, 1], [1, 1]], // O
+            [[0, 1, 1], [1, 1, 0]], // S
+            [[1, 1, 0], [0, 1, 1]], // Z
+            [[1, 1, 1], [0, 1, 0]], // T
+            [[1, 1, 1], [1, 0, 0]], // L
+            [[1, 1, 1], [0, 0, 1]] // J
+        ];
+
+        let board = Array.from({ length: boardHeight }, () => Array(boardWidth).fill(null));
+
+        function isValidMove(shape, x, y) {
+            return shape.every((row, r) =>
+                row.every((cell, c) =>
+                    !cell || (x + c >= 0 && x + c < boardWidth && y + r < boardHeight && !board[y + r][x + c])
+                )
+            );
+        }
+
+        let currentPiece;
+
+        function spawnBlock() {
+            currentPiece = {
+                shape: tetrominoes[Math.floor(Math.random() * tetrominoes.length)],
+                x: 4,
+                y: 0,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                blocks: []
+            };
+            if (!isValidMove(currentPiece.shape, currentPiece.x, currentPiece.y)) {
+                alert("Game Over");
+                location.reload();
+            }
+            updatePiecePosition();
+        }
+
+        function createBlock(x, y, color) {
+            let block = document.createElement("div");
+            block.classList.add("block");
+            block.style.backgroundColor = color;
+            block.style.left = `${x * 32}px`;
+            block.style.top = `${y * 32}px`;
+            gameBoard.appendChild(block);
+            return block;
+        }
+
+        function movePiece(dx, dy) {
+            if (isValidMove(currentPiece.shape, currentPiece.x + dx, currentPiece.y + dy)) {
+                currentPiece.x += dx;
+                currentPiece.y += dy;
+                updatePiecePosition();
+            } else if (dy > 0) {
+                placePiece();
+            }
+        }
+
+        function updatePiecePosition() {
+            currentPiece.blocks.forEach(block => block.remove());
+            currentPiece.blocks = [];
+            currentPiece.shape.forEach((row, r) => {
+                row.forEach((cell, c) => {
+                    if (cell) {
+                        currentPiece.blocks.push(createBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color));
+                    }
+                });
+            });
+        }
+
+        function placePiece() {
+            currentPiece.shape.forEach((row, r) => {
+                row.forEach((cell, c) => {
+                    if (cell) {
+                        board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
+                        createBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color);
+                    }
+                });
+            });
+            checkLines();
+            spawnBlock();
+        }
+
+        function checkLines() {
+            for (let y = 0; y < boardHeight; y++) {
+                if (board[y].every(cell => cell !== null)) {
+                    board.splice(y, 1);
+                    board.unshift(Array(boardWidth).fill(null));
+                    document.querySelectorAll(".block").forEach(block => block.remove());
+                    board.forEach((row, rowIndex) => row.forEach((cell, colIndex) => {
+                        if (cell) createBlock(colIndex, rowIndex, cell);
+                    }));
+                }
+            }
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowLeft") movePiece(-1, 0);
+            if (event.key === "ArrowRight") movePiece(1, 0);
+            if (event.key === "ArrowDown") movePiece(0, 1);
+        });
+
+        setInterval(() => movePiece(0, 1), 1000);
+        spawnBlock();
+    </script>
+</body>
+</html>
